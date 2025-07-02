@@ -4,9 +4,7 @@ package acme.entities.student3;
 import java.util.Date;
 
 import javax.persistence.Entity;
-import javax.persistence.Index;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.Valid;
@@ -26,9 +24,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @ValidActivityLog
-@Table(indexes = {
-	@Index(columnList = "draftMode"), @Index(columnList = "flight_assignment_id"), @Index(columnList = "registrationMoment"), @Index(columnList = "typeOfIncident"), @Index(columnList = "severityLevel")
-})
+//@Table(indexes = {
+//	@Index(columnList = "draftMode"), @Index(columnList = "flight_assignment_id"), @Index(columnList = "registrationMoment"), @Index(columnList = "typeOfIncident"), @Index(columnList = "severityLevel")
+//})
 public class ActivityLog extends AbstractEntity {
 
 	// Serialisation identifier -----------------------------------------------

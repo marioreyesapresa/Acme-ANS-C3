@@ -2,8 +2,6 @@
 package acme.entities.student3;
 
 import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 import acme.client.components.basis.AbstractEntity;
 import acme.client.components.mappings.Automapped;
@@ -17,11 +15,11 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(uniqueConstraints = {
-	@UniqueConstraint(columnNames = {
-		"passportCountry", "destinationCountry"
-	})
-})
+//@Table(uniqueConstraints = {
+//	@UniqueConstraint(columnNames = {
+//		"passportCountry", "destinationCountry"
+//	})
+//})
 public class VisaRequirement extends AbstractEntity {
 
 	/*

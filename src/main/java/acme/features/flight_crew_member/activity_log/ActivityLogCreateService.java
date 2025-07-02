@@ -17,19 +17,18 @@ public class ActivityLogCreateService extends AbstractGuiService<FlightCrewMembe
 	// Internal state ---------------------------------------------------------
 
 	@Autowired
-	private ActivityLogRepository	repository;
+	private ActivityLogRepository repository;
 
 	// AbstractGuiService interface -------------------------------------------
-
-	private static final String		MASTER_ID	= "master_id";
 
 
 	@Override
 	public void authorise() {
 		boolean status = false;
+		int masterId;
 		FlightAssignment flightAssignment;
 
-		Integer masterId = super.getRequest().getData(ActivityLogCreateService.MASTER_ID, Integer.class);
+		masterId = super.getRequest().getData("masterId", int.class);
 		int flightCrewMemberId = super.getRequest().getPrincipal().getActiveRealm().getId();
 		boolean authorised = this.repository.existsFlightCrewMember(flightCrewMemberId);
 
@@ -49,9 +48,10 @@ public class ActivityLogCreateService extends AbstractGuiService<FlightCrewMembe
 	@Override
 	public void load() {
 		ActivityLog activityLog;
+		int masterId;
 		FlightAssignment flightAssignment;
 
-		Integer masterId = super.getRequest().getData(ActivityLogCreateService.MASTER_ID, Integer.class);
+		masterId = super.getRequest().getData("masterId", int.class);
 		flightAssignment = this.repository.findFlightAssignmentById(masterId);
 
 		activityLog = new ActivityLog();
@@ -73,7 +73,6 @@ public class ActivityLogCreateService extends AbstractGuiService<FlightCrewMembe
 
 	@Override
 	public void validate(final ActivityLog activityLog) {
-		// No se requiere validación específica al eliminar registros de actividad.
 	}
 
 	@Override
@@ -85,11 +84,12 @@ public class ActivityLogCreateService extends AbstractGuiService<FlightCrewMembe
 	@Override
 	public void unbind(final ActivityLog activityLog) {
 		Dataset dataset;
+		int masterId;
 
-		Integer masterId = super.getRequest().getData(ActivityLogCreateService.MASTER_ID, Integer.class);
+		masterId = super.getRequest().getData("masterId", int.class);
 
 		dataset = super.unbindObject(activityLog, "registrationMoment", "typeOfIncident", "description", "severityLevel", "draftMode");
-		dataset.put(ActivityLogCreateService.MASTER_ID, masterId);
+		dataset.put("masterId", masterId);
 		dataset.put("draftMode", activityLog.isDraftMode());
 		dataset.put("readonly", false);
 		dataset.put("masterDraftMode", !this.repository.isFlightAssignmentAlreadyPublishedById(masterId));
