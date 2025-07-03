@@ -40,8 +40,24 @@ public class CustomerBookingCreateService extends AbstractGuiService<Customer, B
 
 	@Override
 	public void authorise() {
-		boolean isCustomer = super.getRequest().getPrincipal().hasRealmOfType(Customer.class);
-		boolean authorised = isCustomer;
+		boolean authorised = super.getRequest().getPrincipal().hasRealmOfType(Customer.class);
+
+		if (authorised && super.getRequest().hasData(CustomerBookingCreateService.FLIGHT_ID_FIELD))
+			try {
+				int flightId = super.getRequest().getData(CustomerBookingCreateService.FLIGHT_ID_FIELD, int.class);
+				Flight flight = this.flightRepository.findFlightById(flightId);
+				authorised = flightId == 0 || flight != null && !flight.getDraftMode();
+			} catch (final Throwable e) {
+				authorised = false; // si alguien intenta manipular el valor
+			}
+
+		if (authorised && super.getRequest().hasData("travelClass"))
+			try {
+				TravelClass travelClass = super.getRequest().getData("travelClass", TravelClass.class);
+				authorised = travelClass != null;
+			} catch (final Throwable e) {
+				authorised = false; // enum inválido = manipulación
+			}
 
 		super.getResponse().setAuthorised(authorised);
 	}
@@ -65,32 +81,33 @@ public class CustomerBookingCreateService extends AbstractGuiService<Customer, B
 	@Override
 	public void bind(final Booking booking) {
 		Flight flight = null;
+		TravelClass travelClass = null;
 
-		if (super.getRequest().hasData(CustomerBookingCreateService.FLIGHT_ID_FIELD))
-			try {
-				int flightId = super.getRequest().getData(CustomerBookingCreateService.FLIGHT_ID_FIELD, int.class);
-				flight = this.flightRepository.findFlightById(flightId);
-			} catch (final Throwable t) {
-				// Ignorado: se valida después
-			}
+		if (super.getRequest().hasData(CustomerBookingCreateService.FLIGHT_ID_FIELD)) {
+			int flightId = super.getRequest().getData(CustomerBookingCreateService.FLIGHT_ID_FIELD, int.class);
+			flight = this.flightRepository.findFlightById(flightId);
+		}
 
-		super.bindObject(booking, CustomerBookingCreateService.LOCATOR_CODE_FIELD, "lastCardDigits", "travelClass");
+		if (super.getRequest().hasData("travelClass"))
+			travelClass = super.getRequest().getData("travelClass", TravelClass.class);
 
 		booking.setFlightId(flight);
+		booking.setTravelClass(travelClass);
 		booking.setDraftMode(false);
+
+		super.bindObject(booking, CustomerBookingCreateService.LOCATOR_CODE_FIELD, "lastCardDigits");
 
 		if (flight != null) {
 			Money basePrice = this.flightRepository.findCostByFlight(flight.getId());
 			booking.setPrice(basePrice);
-		} else
-			booking.setPrice(null);
+		}
 	}
 
 	@Override
 	public void validate(final Booking booking) {
-		Booking b = this.repository.findBookingByLocatorCode(booking.getLocatorCode());
-		if (b != null)
-			super.state(false, CustomerBookingCreateService.LOCATOR_CODE_FIELD, "acme.validation.confirmation.message.booking.locator-code");
+		Collection<Booking> bookings = this.repository.findBookingsByLocatorCode(booking.getLocatorCode());
+		boolean status1 = bookings.isEmpty();
+		super.state(status1, CustomerBookingCreateService.LOCATOR_CODE_FIELD, "customer.booking.form.error.locatorCode");
 	}
 
 	@Override
@@ -105,9 +122,6 @@ public class CustomerBookingCreateService extends AbstractGuiService<Customer, B
 		SelectChoices flightChoices;
 
 		Collection<Flight> flights = this.flightRepository.findAllFlight();
-
-		if (flights == null || flights.isEmpty())
-			throw new IllegalArgumentException("No hay vuelos disponibles");
 
 		flightChoices = SelectChoices.from(flights, "tag", booking.getFlightId());
 		choices = SelectChoices.from(TravelClass.class, booking.getTravelClass());

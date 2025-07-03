@@ -1,6 +1,8 @@
 
 package acme.features.administrator.recommendation;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import acme.client.components.models.Dataset;
 import acme.client.components.principals.Administrator;
 import acme.client.services.AbstractGuiService;
@@ -13,16 +15,11 @@ public class AdministratorRecommendationShowService extends AbstractGuiService<A
 
 	// Internal state ---------------------------------------------------------
 
-	private final CustomerRecommendationRepository repository;
-
-	// Constructor ------------------------------------------------------------
-
-
-	public AdministratorRecommendationShowService(final CustomerRecommendationRepository repository) {
-		this.repository = repository;
-	}
+	@Autowired
+	private CustomerRecommendationRepository repository;
 
 	// AbstractGuiService interface -------------------------------------------
+
 
 	@Override
 	public void authorise() {
@@ -33,7 +30,7 @@ public class AdministratorRecommendationShowService extends AbstractGuiService<A
 
 		if (status && super.getRequest().hasData("id")) {
 			recId = super.getRequest().getData("id", int.class);
-			rec = this.repository.findRecommendationById(recId);
+			rec = this.repository.findRecommendationById(recId).orElse(null);  // ✅ Manejo seguro del Optional
 			status = rec != null;
 		} else
 			status = false;
@@ -47,8 +44,7 @@ public class AdministratorRecommendationShowService extends AbstractGuiService<A
 		int recommendationId;
 
 		recommendationId = super.getRequest().getData("id", int.class);
-		recommendation = this.repository.findRecommendationById(recommendationId);
-
+		recommendation = this.repository.findRecommendationById(recommendationId).orElseThrow();  // ✅ Control explícito del error
 		super.getBuffer().addData(recommendation);
 	}
 
@@ -60,5 +56,4 @@ public class AdministratorRecommendationShowService extends AbstractGuiService<A
 
 		super.getResponse().addData(dataset);
 	}
-
 }

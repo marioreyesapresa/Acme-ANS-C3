@@ -1,114 +1,153 @@
 
 package acme.features.authenticated.customer.booking;
 
+import java.util.Collection;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import acme.client.components.datatypes.Money;
 import acme.client.components.models.Dataset;
 import acme.client.components.views.SelectChoices;
-import acme.client.helpers.PrincipalHelper;
 import acme.client.services.AbstractGuiService;
 import acme.client.services.GuiService;
+<<<<<<< HEAD
+import acme.entities.student1.Flight;
+=======
 import acme.entities.student1.FlightRepository;
+>>>>>>> master
 import acme.entities.student2.Booking;
 import acme.entities.student2.TravelClass;
 import acme.realms.Customer;
 
 @GuiService
 public class CustomerBookingUpdateService extends AbstractGuiService<Customer, Booking> {
+
 	// Internal state ---------------------------------------------------------
 
 	@Autowired
-	private CustomerBookingRepository	repository;
+	private CustomerBookingRepository customerBookingRepository;
 
-	@Autowired
-	private FlightRepository			flightRepository;
-
-	// AbstractGuiService interfaced ------------------------------------------
+	// AbstractGuiService interface -------------------------------------------
 
 
 	@Override
 	public void authorise() {
-		int id = super.getRequest().getData("id", int.class);
-		Booking booking = this.repository.findById(id);
+		// ✅ Eliminar campos que pueden estar manipulados
+		super.getRequest().getData().remove("price");
+		super.getRequest().getData().remove("purchaseMoment");
 
-		boolean authorised = booking != null && super.getRequest().getPrincipal().hasRealm(booking.getCustomer()) && !booking.isDraftMode();
+		boolean status = super.getRequest().getPrincipal().hasRealmOfType(Customer.class);
 
-		super.getResponse().setAuthorised(authorised);
+		if (status && super.getRequest().hasData("id"))
+			try {
+				int bookingId = super.getRequest().getData("id", int.class);
+				Booking booking = this.customerBookingRepository.findBookingById(bookingId);
+				status = booking != null && super.getRequest().getPrincipal().hasRealm(booking.getCustomer()) && !booking.isDraftMode();
+			} catch (final Throwable e) {
+				status = false;
+			}
+		else
+			status = false;
+
+		if (status && super.getRequest().hasData("flightId"))
+			try {
+				int flightId = super.getRequest().getData("flightId", int.class);
+				Flight flight = this.customerBookingRepository.findFlightById(flightId);
+				status = flightId == 0 || flight != null && !flight.getDraftMode();
+			} catch (final Throwable e) {
+				status = false;
+			}
+
+		if (status && super.getRequest().hasData("travelClass"))
+			try {
+				TravelClass travelClass = super.getRequest().getData("travelClass", TravelClass.class);
+				status = travelClass != null;
+			} catch (final Throwable e) {
+				status = false;
+			}
+
+		super.getResponse().setAuthorised(status);
 	}
 
 	@Override
 	public void load() {
-		int id = super.getRequest().getData("id", int.class);
-		Booking booking = this.repository.findById(id);
+		Integer id = super.getRequest().getData("id", int.class);
+		Booking booking = this.customerBookingRepository.findBookingById(id);
 		super.getBuffer().addData(booking);
 	}
-
 	@Override
 	public void bind(final Booking booking) {
-		assert booking != null;
 
-		super.bindObject(booking, "travelClass", "lastCardDigits", "locatorCode", "flightId");
+		// ✅ Paso 2: Obtener datos legítimos y bindear los editables
+		Flight flight = null;
+		TravelClass travelClass = null;
 
-		// Ignorar campos que pueden haber sido manipulados
-		int id = super.getRequest().getData("id", int.class);
-		Booking original = this.repository.findById(id);
+		if (super.getRequest().hasData("flightId")) {
+			int flightId = super.getRequest().getData("flightId", int.class);
+			flight = this.customerBookingRepository.findFlightById(flightId);
+		}
 
-		booking.setPrice(original.getPrice());
-		booking.setPurchaseMoment(original.getPurchaseMoment());
+		if (super.getRequest().hasData("travelClass"))
+			travelClass = super.getRequest().getData("travelClass", TravelClass.class);
+
+		booking.setFlightId(flight);
+		booking.setTravelClass(travelClass);
+
+		// ✅ Bind solo de campos permitidos
+		super.bindObject(booking, "locatorCode", "lastCardDigits");
+
+		// ✅ Reasignar los valores correctos y fiables desde el servidor
+		if (flight != null)
+			booking.setPrice(flight.getCost());
+
+		Booking original = this.customerBookingRepository.findBookingById(booking.getId());
+		if (original != null)
+			booking.setPurchaseMoment(original.getPurchaseMoment());
 	}
 
 	@Override
 	public void validate(final Booking booking) {
-		assert booking != null;
+		Collection<Booking> bookings = this.customerBookingRepository.findBookingsByLocatorCode(booking.getLocatorCode());
+		boolean isUnique;
 
-		boolean Notpublished = !booking.isDraftMode();
-		super.state(Notpublished, "draftMode", "customer.booking.form.error.alreadyPublished");
-
+		isUnique = bookings.isEmpty() || bookings.stream().allMatch(b -> b.getId() == booking.getId());
+		super.state(isUnique, "locatorCode", "customer.booking.form.error.locatorCode");
 	}
+
 	@Override
 	public void perform(final Booking booking) {
-		assert booking != null;
-
-		// Obtener el precio por pasajero (Money) desde el vuelo
-		Money pricePerPassenger = this.flightRepository.findCostByFlight(booking.getFlightId().getId());
-
-		// Obtener número de pasajeros
-		int passengerCount = this.repository.countNumberOfPassengersOfBooking(booking.getId());
-
-		// Calcular nuevo precio total
-		Money newPrice = new Money();
-		if (passengerCount == 0)
-			// Si no hay pasajeros, el precio es el del vuelo base
-			newPrice.setAmount(pricePerPassenger.getAmount());
-		else
-			// Si hay pasajeros, se multiplica por el número
-			newPrice.setAmount(pricePerPassenger.getAmount() * passengerCount);
-		newPrice.setCurrency(pricePerPassenger.getCurrency());
-
-		// Asignar nuevo precio a la booking
-		booking.setPrice(newPrice);
-
-		// Guardar la booking actualizada
-		this.repository.save(booking);
+		this.customerBookingRepository.save(booking);
 	}
 
 	@Override
 	public void unbind(final Booking booking) {
-		SelectChoices flights = SelectChoices.from(this.repository.findAllFlights(), "id", booking.getFlightId());
+		Dataset dataset;
+
+		// ⚠️ NO incluir 'price' ni 'purchaseMoment' en el bind principal
+		dataset = super.unbindObject(booking, "flightId", "customer", "locatorCode", "travelClass", "lastCardDigits", "draftMode", "id");
+
+		// ✅ Añadir price como string simple
+		Money price = booking.getPrice();
+		String priceFormatted = price.getAmount() + " " + price.getCurrency();
+		dataset.put("priceDisplay", priceFormatted);
+
+		// ✅ Añadir purchaseMoment como string simple
+		String purchaseMomentFormatted = booking.getPurchaseMoment().toString(); // o usa un formateador
+		dataset.put("purchaseMomentDisplay", purchaseMomentFormatted);
+
+		// ✅ Choices para travelClass y flights
 		SelectChoices travelClasses = SelectChoices.from(TravelClass.class, booking.getTravelClass());
+		Collection<Flight> flights = this.customerBookingRepository.findAllPublishedFlights();
+		SelectChoices flightChoices = SelectChoices.from(flights, "tag", booking.getFlightId());
 
-		Dataset dataset = super.unbindObject(booking, "travelClass", "price", "locatorCode", "purchaseMoment", "lastCardDigits");
-		dataset.put("travelClasses", travelClasses);
-		dataset.put("flights", flights);
-		dataset.put("bookingId", booking.getId());
+		dataset.put("travelClass", travelClasses);
+		dataset.put("flights", flightChoices);
 
+		// ✅ Control de pasajeros
+		Boolean hasPassengers = !this.customerBookingRepository.findPassengersByBooking(booking.getId()).isEmpty();
+		super.getResponse().addGlobal("hasPassengers", hasPassengers);
+
+		// ✅ Enviar todo al frontend
 		super.getResponse().addData(dataset);
-	}
-
-	@Override
-	public void onSuccess() {
-		if (super.getRequest().getMethod().equalsIgnoreCase("POST"))
-			PrincipalHelper.handleUpdate();
 	}
 }

@@ -4,15 +4,14 @@
 <%@taglib prefix="acme" uri="http://acme-framework.org/"%>
 
 <acme:form>
-		<acme:input-select code="customer.booking-record.list.label.booking" path="booking" choices="${bookings}"/>
-		<acme:input-select code="customer.booking-record.list.label.passenger" path="passenger" choices="${passengers}"/>
-		
-	<jstl:choose>
-			
-			<jstl:when test="${_command == 'create'}">
-				<acme:submit code="authenticated.booking-record.form.button.create" action="/customer/booking-record/create"/>
-			</jstl:when>
-					
+
+    
+	<jstl:choose>		
+		<jstl:when test="${_command == 'create'}">
+			<acme:input-select code="customer.bookingRecord.form.label.booking" path="booking" choices="${bookings}"/>
+    		<acme:input-select code="customer.bookingRecord.form.label.passenger" path="passenger" choices="${passengers}"/>
+			<input type="hidden" name="bookingId" value="${bookingId}" />
+			<acme:submit code="customer.bookingRecord.form.button.create" action="/customer/booking-record/create"/>
+		</jstl:when>		
 	</jstl:choose>	
-		
 </acme:form>
