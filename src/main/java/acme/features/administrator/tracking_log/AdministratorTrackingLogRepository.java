@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import acme.client.repositories.AbstractRepository;
 import acme.entities.student1.Leg;
+import acme.entities.student4.Claim;
 import acme.entities.student4.TrackingLog;
 
 @Repository
@@ -24,5 +25,8 @@ public interface AdministratorTrackingLogRepository extends AbstractRepository {
 
 	@Query("SELECT t FROM TrackingLog t WHERE t.claim.id = :claimId and t.draftMode=false")
 	Collection<TrackingLog> findTrackingLogsPublishedByClaimId(int claimId);
+
+	@Query("SELECT c FROM Claim c WHERE c.id = :id")
+	public Claim findClaimById(int id);
 
 }

@@ -71,9 +71,9 @@
 		    <acme:menu-separator/>
 			<acme:menu-suboption code="master.menu.administrator.list-bookings" action="/administrator/booking/list"/>
 			<acme:menu-separator/>
-		    <acme:menu-suboption code="master.menu.administrator.shut-system-down" action="/administrator/system/shut-down"/>
-			<acme:menu-separator/>
 			<acme:menu-suboption code="master.menu.administrator.list.claim" action="/administrator/claim/list" access="isAuthenticated()"/>
+			<acme:menu-separator/>
+		    <acme:menu-suboption code="master.menu.administrator.shut-system-down" action="/administrator/system/shut-down"/>
 		</acme:menu-option>
 
 

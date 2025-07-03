@@ -9,6 +9,7 @@ import acme.client.components.models.Dataset;
 import acme.client.components.principals.Administrator;
 import acme.client.services.AbstractGuiService;
 import acme.client.services.GuiService;
+import acme.entities.student4.Claim;
 import acme.entities.student4.TrackingLog;
 
 @GuiService
@@ -28,7 +29,15 @@ public class AdministratorTrackingLogListService extends AbstractGuiService<Admi
 
 	@Override
 	public void authorise() {
-		super.getResponse().setAuthorised("GET".equals(super.getRequest().getMethod()));
+		boolean result = false;
+
+		if ("GET".equals(super.getRequest().getMethod())) {
+			int claimId = super.getRequest().getData("claimId", int.class);
+			Claim claim = this.repository.findClaimById(claimId);
+			result = claim != null && !claim.isDraftMode();
+		}
+
+		super.getResponse().setAuthorised(result);
 	}
 
 	@Override

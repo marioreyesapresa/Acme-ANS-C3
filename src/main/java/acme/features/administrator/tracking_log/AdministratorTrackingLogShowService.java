@@ -8,6 +8,7 @@ import acme.client.components.principals.Administrator;
 import acme.client.components.views.SelectChoices;
 import acme.client.services.AbstractGuiService;
 import acme.client.services.GuiService;
+import acme.entities.student4.Claim;
 import acme.entities.student4.Indicator;
 import acme.entities.student4.TrackingLog;
 
@@ -28,13 +29,14 @@ public class AdministratorTrackingLogShowService extends AbstractGuiService<Admi
 
 	@Override
 	public void authorise() {
-		boolean status;
-		int trackingLogId;
-		TrackingLog trackingLog;
+		boolean status = false;
+		int trackingLogId = super.getRequest().getData("id", int.class);
+		TrackingLog trackingLog = this.repository.findOneTrackingLogById(trackingLogId);
 
-		trackingLogId = super.getRequest().getData("id", int.class);
-		trackingLog = this.repository.findOneTrackingLogById(trackingLogId);
-		status = trackingLog != null && !trackingLog.isDraftMode();
+		if (trackingLog != null && !trackingLog.isDraftMode()) {
+			Claim claim = trackingLog.getClaim();
+			status = claim != null && !claim.isDraftMode();
+		}
 
 		super.getResponse().setAuthorised(status);
 	}
