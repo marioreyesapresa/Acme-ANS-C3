@@ -80,6 +80,7 @@ public class FlightAssignmentCreateService extends AbstractGuiService<FlightCrew
 		AvailabilityStatus status = flightAssignment.getFlightCrewMember().getAvailabilityStatus();
 		FlightCrewMember flightCrewMember = flightAssignment.getFlightCrewMember();
 		Leg leg = flightAssignment.getLeg();
+		boolean draftedLeg = flightAssignment.getLeg() == null ? false : flightAssignment.getLeg().isDraftMode();
 
 		if (flightCrewMember != null && leg != null && this.isLegCompatible(flightAssignment)) {
 			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.FlightCrewMemberIncompatibleLegs.message");
@@ -87,6 +88,9 @@ public class FlightAssignmentCreateService extends AbstractGuiService<FlightCrew
 		}
 		if (leg != null)
 			this.checkPilotAndCopilotAssignment(flightAssignment);
+
+		if (draftedLeg)
+			super.state(false, "leg", "acme.validation.FlightAssignment.DraftModeLeg.message");
 
 		if (!AvailabilityStatus.AVAILABLE.equals(status))
 			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.OnlyAvailableCanBeAssigned.message");
