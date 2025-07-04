@@ -75,7 +75,6 @@ public class ActivityLogPublishService extends AbstractGuiService<FlightCrewMemb
 
 	@Override
 	public void perform(final ActivityLog activityLog) {
-		activityLog.setRegistrationMoment(MomentHelper.getCurrentMoment());
 		activityLog.setDraftMode(false);
 		this.repository.save(activityLog);
 	}
@@ -83,9 +82,7 @@ public class ActivityLogPublishService extends AbstractGuiService<FlightCrewMemb
 	@Override
 	public void unbind(final ActivityLog activityLog) {
 		Dataset dataset;
-		dataset = super.unbindObject(activityLog, "registrationMoment", "typeOfIncident", "description", "severityLevel", "draftMode");
-		dataset.put("draftMode", activityLog.isDraftMode() && !activityLog.getFlightAssignment().isDraftMode());
-		dataset.put("readonly", false);
+		dataset = super.unbindObject(activityLog, "draftMode", "typeOfIncident", "description", "severityLevel");
 		super.getResponse().addData(dataset);
 	}
 

@@ -68,29 +68,6 @@ public class FlightAssignmentPublishService extends AbstractGuiService<FlightCre
 		flightAssignment.setFlightCrewMember(flightCrewMember);
 	}
 
-	@Override
-	public void validate(final FlightAssignment flightAssignment) {
-		FlightAssignment original = this.repository.findFlightAssignmentById(flightAssignment.getId());
-		Leg leg = flightAssignment.getLeg();
-		AvailabilityStatus status = flightAssignment.getFlightCrewMember().getAvailabilityStatus();
-		boolean cambioDuty = !original.getDuty().equals(flightAssignment.getDuty());
-		boolean cambioLeg = !original.getLeg().equals(flightAssignment.getLeg());
-		boolean cambioMoment = !original.getMoment().equals(flightAssignment.getMoment());
-		boolean cambioStatus = !original.getCurrentStatus().equals(flightAssignment.getCurrentStatus());
-
-		if (!(cambioDuty || cambioLeg || cambioMoment || cambioStatus))
-			return;
-
-		if (leg != null && cambioLeg && !this.isLegCompatible(flightAssignment))
-			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.FlightCrewMemberIncompatibleLegs.message");
-
-		if (leg != null && (cambioDuty || cambioLeg))
-			this.checkPilotAndCopilotAssignment(flightAssignment);
-
-		if (!AvailabilityStatus.AVAILABLE.equals(status))
-			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.OnlyAvailableCanBeAssigned.message");
-	}
-
 	private boolean isLegCompatible(final FlightAssignment flightAssignment) {
 		Collection<Leg> legsByMember = this.repository.findLegsByFlightCrewMember(flightAssignment.getFlightCrewMember().getId());
 		Leg newLeg = flightAssignment.getLeg();
@@ -110,6 +87,36 @@ public class FlightAssignmentPublishService extends AbstractGuiService<FlightCre
 			super.state(!havePilot, "duty", "acme.validation.FlightAssignment.havePilot.message");
 		if (Duty.COPILOT.equals(flightAssignment.getDuty()))
 			super.state(!haveCopilot, "duty", "acme.validation.FlightAssignment.haveCopilot.message");
+	}
+
+	@Override
+	public void validate(final FlightAssignment flightAssignment) {
+		FlightAssignment original = this.repository.findFlightAssignmentById(flightAssignment.getId());
+		Leg leg = flightAssignment.getLeg();
+		AvailabilityStatus status = flightAssignment.getFlightCrewMember().getAvailabilityStatus();
+		boolean cambioDuty = !original.getDuty().equals(flightAssignment.getDuty());
+		boolean cambioLeg = !original.getLeg().equals(flightAssignment.getLeg());
+		boolean completedLeg = flightAssignment.getLeg() == null ? false : LegStatus.LANDED.equals(flightAssignment.getLeg().getStatus());
+		boolean draftedLeg = flightAssignment.getLeg() == null ? false : flightAssignment.getLeg().isDraftMode();
+		boolean pendingCurrentStatus = flightAssignment.getCurrentStatus() != CurrentStatus.PENDING;
+
+		if (leg != null && cambioLeg && !this.isLegCompatible(flightAssignment))
+			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.FlightCrewMemberIncompatibleLegs.message");
+
+		if (leg != null && (cambioDuty || cambioLeg))
+			this.checkPilotAndCopilotAssignment(flightAssignment);
+
+		if (!pendingCurrentStatus)
+			super.state(false, "currentStatus", "acme.validation.FlightAssignment.FlightCrewMemberIncompatibleLegs.message");
+
+		if (draftedLeg)
+			super.state(false, "leg", "acme.validation.FlightAssignment.DraftModeLeg.message");
+
+		if (!AvailabilityStatus.AVAILABLE.equals(status))
+			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.OnlyAvailableCanBeAssigned.message");
+
+		if (completedLeg)
+			super.state(false, "leg", "acme.validation.FlightAssignment.LegAlreadyCompleted.message");
 	}
 
 	@Override

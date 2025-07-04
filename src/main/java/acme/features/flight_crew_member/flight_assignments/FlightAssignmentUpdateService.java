@@ -77,6 +77,7 @@ public class FlightAssignmentUpdateService extends AbstractGuiService<FlightCrew
 		boolean cambioLeg = !original.getLeg().equals(flightAssignment.getLeg());
 		boolean cambioMoment = !original.getMoment().equals(flightAssignment.getMoment());
 		boolean cambioStatus = !original.getCurrentStatus().equals(flightAssignment.getCurrentStatus());
+		boolean draftedLeg = flightAssignment.getLeg() == null ? false : flightAssignment.getLeg().isDraftMode();
 
 		if (!(cambioDuty || cambioLeg || cambioMoment || cambioStatus))
 			return;
@@ -86,6 +87,9 @@ public class FlightAssignmentUpdateService extends AbstractGuiService<FlightCrew
 
 		if (leg != null && (cambioDuty || cambioLeg))
 			this.checkPilotAndCopilotAssignment(flightAssignment);
+
+		if (draftedLeg)
+			super.state(false, "leg", "acme.validation.FlightAssignment.DraftModeLeg.message");
 
 		if (!AvailabilityStatus.AVAILABLE.equals(status))
 			super.state(false, "flightCrewMember", "acme.validation.FlightAssignment.OnlyAvailableCanBeAssigned.message");
