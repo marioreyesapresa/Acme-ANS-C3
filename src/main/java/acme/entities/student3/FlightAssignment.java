@@ -6,7 +6,9 @@ import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.Index;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
@@ -24,10 +26,10 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-// @Table(indexes = {
-//	@Index(columnList = "draftMode"), @Index(columnList = "leg_id"), @Index(columnList = "flight_crew_member_id"), @Index(columnList = "leg_id, duty"), @Index(columnList = "flight_crew_member_id, leg_id"), @Index(columnList = "moment"),
-//	@Index(columnList = "currentStatus")
-// })
+
+@Table(indexes = {
+	@Index(columnList = "leg_id, flight_crew_member_id"), @Index(columnList = "flight_crew_member_id"), @Index(columnList = "leg_id"),
+})
 
 public class FlightAssignment extends AbstractEntity {
 
