@@ -76,15 +76,14 @@ public class TechnicianMaintenanceRecordPublishService extends AbstractGuiServic
 		aircraftId = super.getRequest().getData("aircraft", int.class);
 		aircraft = this.repository.findAircraftById(aircraftId);
 
-		super.bindObject(maintenanceRecord, "moment", "status", "nextInspectionDueTime", "estimatedCost", "notes");
+		super.bindObject(maintenanceRecord, "status", "nextInspectionDueTime", "estimatedCost", "notes");
 		maintenanceRecord.setAircraft(aircraft);
 	}
 
 	@Override
 	public void validate(final MaintenanceRecord maintenanceRecord) {
-		// --- VALIDACIÓN DE TAREAS  ---
+		// --- VALIDACIÓN DE TAREAS ---
 		Collection<Task> tasks = this.repository.findTasksByMaintenanceRecordId(maintenanceRecord.getId());
-
 		super.state(!tasks.isEmpty(), "*", "technician.maintenance-record.form.error.zero-tasks");
 
 		boolean hasUnpublishedTask = tasks.stream().anyMatch(Task::isDraftMode);
@@ -95,8 +94,6 @@ public class TechnicianMaintenanceRecordPublishService extends AbstractGuiServic
 
 		// --- VALIDACIÓN DE MONEDA ---
 		if (!super.getBuffer().getErrors().hasErrors("estimatedCost") && maintenanceRecord.getEstimatedCost() != null) {
-
-			// Lista de monedas permitidas
 			final String[] acceptedCurrencies = {
 				"EUR", "USD", "GBP"
 			};
@@ -112,6 +109,10 @@ public class TechnicianMaintenanceRecordPublishService extends AbstractGuiServic
 
 			super.state(ok, "estimatedCost", "technician.maintenance-record.form.error.currency");
 		}
+
+		// --- COHERENCIA TEMPORAL: nextInspection >= moment ---
+		if (!super.getBuffer().getErrors().hasErrors("nextInspectionDueTime") && maintenanceRecord.getNextInspectionDueTime() != null && maintenanceRecord.getMoment() != null)
+			super.state(!maintenanceRecord.getNextInspectionDueTime().before(maintenanceRecord.getMoment()), "nextInspectionDueTime", "technician.maintenance-record.form.error.future-inspection");
 	}
 
 	@Override

@@ -32,6 +32,7 @@ technician.maintenance-record.list.label.nextInspectionDueTime = Próxima inspec
 
 technician.maintenance-record.list.button.create = Crear
 
+technician.maintenance-record.form.error.future-inspection = La siguiente inspección debe ser posterior al momento de mantenimiento.
 technician.maintenance-record.form.error.currency = La Moneda debe ser EUR, USD or GBP.
 technician.maintenance-record.form.error.zero-tasks = Para publicar un registro de mantenimiento, este debe tener al menos una tarea publicada
 technician.maintenance-record.form.error.not-all-tasks-published = Para publicar un registro de mantenimiento, este debe tener todas sus tareas publicadas
