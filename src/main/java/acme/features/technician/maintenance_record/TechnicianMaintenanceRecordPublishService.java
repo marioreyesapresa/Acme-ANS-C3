@@ -82,15 +82,36 @@ public class TechnicianMaintenanceRecordPublishService extends AbstractGuiServic
 
 	@Override
 	public void validate(final MaintenanceRecord maintenanceRecord) {
+		// --- VALIDACIÓN DE TAREAS  ---
 		Collection<Task> tasks = this.repository.findTasksByMaintenanceRecordId(maintenanceRecord.getId());
 
 		super.state(!tasks.isEmpty(), "*", "technician.maintenance-record.form.error.zero-tasks");
 
 		boolean hasUnpublishedTask = tasks.stream().anyMatch(Task::isDraftMode);
 		super.state(!hasUnpublishedTask, "*", "technician.maintenance-record.form.error.not-all-tasks-published");
+
 		if (maintenanceRecord.getStatus() != null)
 			super.state(maintenanceRecord.getStatus().equals(MaintenanceRecordStatus.COMPLETED), "status", "technician.maintenance-record.form.error.not-completed-status");
 
+		// --- VALIDACIÓN DE MONEDA ---
+		if (!super.getBuffer().getErrors().hasErrors("estimatedCost") && maintenanceRecord.getEstimatedCost() != null) {
+
+			// Lista de monedas permitidas
+			final String[] acceptedCurrencies = {
+				"EUR", "USD", "GBP"
+			};
+			final String currency = maintenanceRecord.getEstimatedCost().getCurrency();
+			boolean ok = false;
+
+			if (currency != null)
+				for (final String c : acceptedCurrencies)
+					if (currency.equalsIgnoreCase(c)) {
+						ok = true;
+						break;
+					}
+
+			super.state(ok, "estimatedCost", "technician.maintenance-record.form.error.currency");
+		}
 	}
 
 	@Override

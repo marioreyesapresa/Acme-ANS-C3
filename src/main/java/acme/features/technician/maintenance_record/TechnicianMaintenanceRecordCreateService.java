@@ -61,8 +61,27 @@ public class TechnicianMaintenanceRecordCreateService extends AbstractGuiService
 	}
 
 	@Override
-	public void validate(final MaintenanceRecord maintenanceRecord) {
-		;
+	public void validate(final MaintenanceRecord mr) {
+
+		if (!super.getBuffer().getErrors().hasErrors("estimatedCost") && mr.getEstimatedCost() != null) {
+
+			// Lista de monedas permitidas 
+			final String[] acceptedCurrencies = {
+				"EUR", "USD", "GBP"
+			};
+
+			final String currency = mr.getEstimatedCost().getCurrency();
+			boolean ok = false;
+
+			if (currency != null)
+				for (final String c : acceptedCurrencies)
+					if (currency.equalsIgnoreCase(c)) {
+						ok = true;
+						break;
+					}
+
+			super.state(ok, "estimatedCost", "technician.maintenance-record.form.error.currency");
+		}
 	}
 
 	@Override
