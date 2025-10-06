@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import acme.client.components.models.Dataset;
 import acme.client.components.views.SelectChoices;
+import acme.client.helpers.MomentHelper;
 import acme.client.services.AbstractGuiService;
 import acme.client.services.GuiService;
 import acme.entities.group.Aircraft;
@@ -48,25 +49,48 @@ public class TechnicianMaintenanceRecordCreateService extends AbstractGuiService
 		maintenanceRecord = new MaintenanceRecord();
 		maintenanceRecord.setDraftMode(true);
 		maintenanceRecord.setTechnician(technician);
+		maintenanceRecord.setMoment(MomentHelper.getCurrentMoment());
 
 		super.getBuffer().addData(maintenanceRecord);
 	}
 
 	@Override
 	public void bind(final MaintenanceRecord maintenanceRecord) {
-		super.bindObject(maintenanceRecord, "moment", "status", "nextInspectionDueTime", "estimatedCost", "notes");
+		super.bindObject(maintenanceRecord, "status", "nextInspectionDueTime", "estimatedCost", "notes");
 
 		maintenanceRecord.setAircraft(super.getRequest().getData("aircraft", Aircraft.class));
 
 	}
 
 	@Override
-	public void validate(final MaintenanceRecord maintenanceRecord) {
-		;
+	public void validate(final MaintenanceRecord mr) {
+		// --- Moneda ---
+		if (!super.getBuffer().getErrors().hasErrors("estimatedCost") && mr.getEstimatedCost() != null) {
+			final String[] acceptedCurrencies = {
+				"EUR", "USD", "GBP"
+			};
+			final String currency = mr.getEstimatedCost().getCurrency();
+			boolean ok = false;
+			if (currency != null)
+				for (final String c : acceptedCurrencies)
+					if (currency.equalsIgnoreCase(c)) {
+						ok = true;
+						break;
+					}
+			super.state(ok, "estimatedCost", "technician.maintenance-record.form.error.currency");
+		}
+
+		// --- Coherencia temporal: nextInspection >= moment ---
+		if (!super.getBuffer().getErrors().hasErrors("nextInspectionDueTime") && mr.getNextInspectionDueTime() != null && mr.getMoment() != null) {
+
+			final boolean onOrAfterMoment = !mr.getNextInspectionDueTime().before(mr.getMoment());
+			super.state(onOrAfterMoment, "nextInspectionDueTime", "technician.maintenance-record.form.error.future-inspection");
+		}
 	}
 
 	@Override
 	public void perform(final MaintenanceRecord maintenanceRecord) {
+		maintenanceRecord.setMoment(MomentHelper.getCurrentMoment());
 		this.repository.save(maintenanceRecord);
 	}
 

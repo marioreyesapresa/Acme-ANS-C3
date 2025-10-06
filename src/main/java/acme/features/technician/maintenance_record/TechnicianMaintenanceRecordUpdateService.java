@@ -76,15 +76,37 @@ public class TechnicianMaintenanceRecordUpdateService extends AbstractGuiService
 		aircraftId = super.getRequest().getData("aircraft", int.class);
 		aircraft = this.repository.findAircraftById(aircraftId);
 
-		super.bindObject(maintenanceRecord, "moment", "status", "nextInspectionDueTime", "estimatedCost", "notes");
+		super.bindObject(maintenanceRecord, "status", "nextInspectionDueTime", "estimatedCost", "notes");
 		maintenanceRecord.setAircraft(aircraft);
 	}
 
 	@Override
-	public void validate(final MaintenanceRecord maintenanceRecord) {
-		;
-	}
+	public void validate(final MaintenanceRecord mr) {
+		//  Moneda aceptada 
+		if (!super.getBuffer().getErrors().hasErrors("estimatedCost") && mr.getEstimatedCost() != null) {
+			final String[] acceptedCurrencies = {
+				"EUR", "USD", "GBP"
+			};
+			final String currency = mr.getEstimatedCost().getCurrency();
+			boolean ok = false;
 
+			if (currency != null)
+				for (final String c : acceptedCurrencies)
+					if (currency.equalsIgnoreCase(c)) {
+						ok = true;
+						break;
+					}
+
+			super.state(ok, "estimatedCost", "technician.maintenance-record.form.error.currency");
+		}
+
+		// Coherencia temporal: la próxima inspección no puede ser anterior al moment
+		if (!super.getBuffer().getErrors().hasErrors("nextInspectionDueTime") && mr.getNextInspectionDueTime() != null && mr.getMoment() != null) {
+
+			final boolean onOrAfterMoment = !mr.getNextInspectionDueTime().before(mr.getMoment());
+			super.state(onOrAfterMoment, "nextInspectionDueTime", "technician.maintenance-record.form.error.future-inspection");
+		}
+	}
 	@Override
 	public void perform(final MaintenanceRecord maintenanceRecord) {
 		this.repository.save(maintenanceRecord);
