@@ -11,6 +11,10 @@
     <acme:input-moment code="administrator.airline.form.label.foundationMoment" path="foundationMoment"/>
     <acme:input-email code="administrator.airline.form.label.email" path="email"/>
     <acme:input-textbox code="administrator.airline.form.label.phoneNumber" path="phoneNumber" placeholder="administrator.airline.form.placeholder.phoneNumber"/>
+    <acme:input-select code="administrator.airline.form.label.airport"
+                   path="airport"
+                   choices="${airports}"/>
+    
 	<acme:input-checkbox code="administrator.airline.form.label.confirmation" path="confirmation"/>
 
 	<jstl:choose>

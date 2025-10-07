@@ -21,7 +21,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(indexes = {
-	@Index(columnList = "name"), @Index(columnList = "averageDwellTime"), @Index(columnList = "discountMoney")
+	@Index(columnList = "name"), @Index(columnList = "averageDwellTime")
 })
 public class Service extends AbstractEntity {
 
